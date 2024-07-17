@@ -1,0 +1,52 @@
+﻿@inject TaskItemService _taskService
+@using FluentValidation
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudTextField Validation="@TaskValidator.Validation" T="string" @bind-Value="@Title" Label="Title" Typo="Typo.input"></MudTextField>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Add">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    FluentValueValidator<string> TaskValidator = new FluentValueValidator<string>(x => x
+        .NotEmpty()
+        .Length(1, 20)
+        .Matches(@"^[a-zA-Z0-9\s]*$").WithMessage("The Name field can only contain letters, numbers, and spaces."));
+
+    private string Title = "";
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Add()
+    {
+        TaskItem task = new TaskItem() { IsCompleted = false, IsFavorite = false, Name = Title };
+        await _taskService.AddTaskItemAsync(task);
+        MudDialog.Close(DialogResult.Ok(task));
+    }
+
+
+    public class FluentValueValidator<T> : AbstractValidator<T>
+    {
+        public FluentValueValidator(Action<IRuleBuilderInitial<T, T>> rule)
+        {
+            rule(RuleFor(x => x));
+        }
+
+        private IEnumerable<string> ValidateValue(T arg)
+        {
+            var result = Validate(arg);
+            if (result.IsValid)
+                return new string[0];
+            return result.Errors.Select(e => e.ErrorMessage);
+        }
+
+        public Func<T, IEnumerable<string>> Validation => ValidateValue;
+    }
+}

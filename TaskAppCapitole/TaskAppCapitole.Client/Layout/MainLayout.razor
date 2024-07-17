@@ -1,0 +1,42 @@
+﻿@inherits LayoutComponentBase
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+<MudThemeProvider Theme="@TaskAppTheme"/>
+
+<MudLayout>
+    <MudMainContent Class="ma-0 pa-10">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+
+@code{
+    private MudTheme TaskAppTheme = new MudTheme()
+        {
+            PaletteLight = new PaletteLight()
+            {
+                Primary = Colors.Blue.Default,
+                Secondary = "#e6e6f5",
+                Tertiary = "#2a2a40",
+                Background = "#1a1a27",
+                Surface = Colors.Shades.White,
+                AppbarBackground = Colors.Blue.Darken3,
+                AppbarText = Colors.Shades.White,
+                DrawerBackground = Colors.Blue.Darken4,
+                DrawerText = Colors.Shades.White,
+                DrawerIcon = Colors.Shades.White,
+                Success = Colors.Green.Default,
+                Warning = "#ffe600",
+                Error = Colors.Red.Default,
+                Info = Colors.Blue.Default
+            }
+        };
+
+}

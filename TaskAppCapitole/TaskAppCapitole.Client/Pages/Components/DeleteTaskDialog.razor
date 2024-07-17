@@ -1,0 +1,25 @@
+﻿@inject TaskItemService _taskService
+<MudDialog>
+    <DialogContent>
+        <MudText>Delete Task?</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Delete">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string id { get; set; }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Delete()
+    {
+        await _taskService.DeleteTaskItemAsync(id);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

@@ -1,0 +1,53 @@
+﻿<MudItem xs="12">
+    <MudStack Row="true" Style="width:100%">
+        <MudIconButton OnClick="DeleteTaskCallback" Class="px-8" Size="Size.Large" Variant="Variant.Filled" Color="Color.Error" Icon="@Icons.Material.Filled.Delete"></MudIconButton>
+        <MudPaper Class="mud-theme-tertiary pa-5 d-flex align-center" Elevation="4" Height="100px" Width="100%">
+            <MudStack Row="true" Class="d-flex align-center" Style="width:100%;">
+                <MudToggleIconButton ToggledChanged="SetFavoriteCallback" Toggled="@task.IsFavorite" Size="Size.Large" ToggledSize="Size.Large"
+                                     Icon="@Icons.Material.Filled.StarBorder" Color="Color.Secondary"
+                                     ToggledIcon="@Icons.Material.Filled.Star" ToggledColor="Color.Warning" />
+                @if (task.IsCompleted)
+                {
+                    <MudButton OnClick="EditTaskItemAsyncCallback">
+                        <MudText Color="Color.Secondary" Typo="Typo.h4"><del>@task.Name</del></MudText>
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton OnClick="EditTaskItemAsyncCallback">
+                        <MudText Color="Color.Secondary" Typo="Typo.h4">@task.Name</MudText>
+                    </MudButton>
+                }
+                <MudSpacer />
+                <MudToggleIconButton ToggledChanged="SetCompletedCallback" Toggled="@task.IsCompleted" Size="Size.Large" ToggledSize="Size.Large"
+                                     Icon="@Icons.Material.Filled.RadioButtonUnchecked" Color="Color.Secondary"
+                                     ToggledIcon="@Icons.Material.Filled.CheckCircleOutline" ToggledColor="Color.Success" />
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudItem>
+
+@code {
+    [Parameter]
+    public TaskItem task { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDeleteTask { get; set; }
+
+    [Parameter]
+    public EventCallback<TaskItem> OnSetFavorite { get; set; }
+
+    [Parameter]
+    public EventCallback<TaskItem> OnEditTaskItemAsync { get; set; }
+
+    [Parameter]
+    public EventCallback<TaskItem> OnSetCompleted { get; set; }
+
+    private void DeleteTaskCallback() => OnDeleteTask.InvokeAsync(task.Id);
+
+    private void SetFavoriteCallback(bool toggled) => OnSetFavorite.InvokeAsync(task);
+
+    private void EditTaskItemAsyncCallback() => OnEditTaskItemAsync.InvokeAsync(task);
+
+    private void SetCompletedCallback(bool toggled) => OnSetCompleted.InvokeAsync(task);
+}

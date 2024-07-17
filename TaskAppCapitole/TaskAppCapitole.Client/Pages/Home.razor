@@ -1,0 +1,147 @@
+﻿@page "/"
+@inject IDialogService DialogService
+@inject TaskItemService _taskService
+<PageTitle>Home</PageTitle>
+<MudGrid Spacing="4">
+	<MudItem xs="12" Class="mb-4">
+		<MudStack Row="true">
+			<MudButton OnClick="@(()=>AddTaskItemAsync())" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">Add</MudButton>
+			<MudChipSet T="FilterType" SelectedValue="currentFilter" CheckMark SelectionMode="SelectionMode.SingleSelection">
+				<MudChip OnClick="@(()=>SetFilter(FilterType.All))" Color="Color.Error" Value="@FilterType.All">All</MudChip>
+				<MudChip OnClick="@(()=>SetFilter(FilterType.Favorites))" Color="Color.Warning" Value="@FilterType.Favorites">Favorites</MudChip>
+				<MudChip OnClick="@(()=>SetFilter(FilterType.Completed))" Color="Color.Info" Value="@FilterType.Completed">Completed</MudChip>
+				<MudChip OnClick="@(()=>SetFilter(FilterType.NotCompleted))" Color="Color.Success" Value="@FilterType.NotCompleted">Not Completed</MudChip>
+			</MudChipSet>
+		</MudStack>
+	</MudItem>
+	<MudItem xs="12" lg="6" Class="mt-4">
+		<MudGrid Style="height:80vh; overflow-y: auto;" Class="align-content-start pa-4">
+			@foreach (TaskItem task in GetFilteredTaskItems())
+			{
+				<TaskCard OnDeleteTask="@(()=>DeleteTask(task.Id))" OnEditTaskItemAsync="@(()=>EditTaskItemAsync(task))" OnSetCompleted="@(()=>SetCompleted(task))" OnSetFavorite="@(()=>SetFavorite(task))" task="task"></TaskCard>
+			}
+		</MudGrid>
+	</MudItem>
+</MudGrid>
+
+
+@code{
+	private List<TaskItem> taskItems = new List<TaskItem>();
+	private FilterType currentFilter = FilterType.All;
+	
+	protected override async Task OnInitializedAsync()
+	{
+		taskItems = await _taskService.GetTaskItemsAsync();
+		if (taskItems == null) taskItems = new List<TaskItem>();
+	}
+
+	private async Task SetFavorite(TaskItem task)
+	{
+		task.IsFavorite = !task.IsFavorite;
+		taskItems.Find(t => t.Id == task.Id)!.IsFavorite = task.IsFavorite;
+		await _taskService.UpdateTaskItemAsync(task);
+	}
+
+	private async Task SetCompleted(TaskItem task)
+	{
+		task.IsCompleted = !task.IsCompleted;
+		task.IsFavorite = false;
+		taskItems.Find(t => t.Id == task.Id)!.IsCompleted = task.IsCompleted;
+		taskItems.Find(t => t.Id == task.Id)!.IsFavorite = false;
+		await _taskService.UpdateTaskItemAsync(task);
+	}
+
+	private async Task AddTaskItemAsync()
+	{
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+
+		IDialogReference dialog = await DialogService.ShowAsync<AddTaskDialog>("Add Task", options);
+		var result = await dialog.Result;
+		if (!result!.Canceled)
+		{
+			if ((TaskItem)result.Data! != null)
+			{
+				taskItems.Add((TaskItem)result.Data!);
+			}
+		}
+
+		StateHasChanged();
+	}
+
+	private async Task EditTaskItemAsync(TaskItem task)
+	{
+		var parameters = new DialogParameters<EditTaskDialog>
+		{
+			{ x => x.task, task}
+		};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+
+		IDialogReference dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+		var result = await dialog.Result;
+		if (!result!.Canceled)
+		{
+			if ((TaskItem)result.Data! != null)
+			{
+				taskItems.Where(t=>t.Id == task.Id).FirstOrDefault()!.Name = ((TaskItem)result.Data!).Name;
+			}
+		}
+		StateHasChanged();
+	}
+
+	private async Task DeleteTask(string id)
+	{
+		var parameters = new DialogParameters<DeleteTaskDialog>
+		{
+			{ x => x.id, id}
+		};
+
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+
+		IDialogReference dialog = await DialogService.ShowAsync<DeleteTaskDialog>("Confirm Delete", parameters, options);
+		var result = await dialog.Result;
+		if (!result!.Canceled)
+		{
+			TaskItem task = taskItems.Find(t => t.Id == id)!;
+			if (task != null) {
+				taskItems.Remove(task);
+			}
+		}
+
+		StateHasChanged();
+	}
+
+	private void SetFilter(FilterType filter)
+	{
+		currentFilter = filter;
+		StateHasChanged();
+	}
+
+	private IEnumerable<TaskItem> GetFilteredTaskItems()
+	{
+		var filteredTaskItems = taskItems;
+
+		switch (currentFilter)
+		{
+			case FilterType.Favorites:
+				filteredTaskItems = filteredTaskItems.OrderByDescending(t => t.IsFavorite).ThenBy(t => t.IsCompleted).Where(t => t.IsFavorite).ToList();
+				break;
+			case FilterType.Completed:
+				filteredTaskItems = filteredTaskItems.OrderByDescending(t => t.IsFavorite).ThenBy(t => t.IsCompleted).Where(t => t.IsCompleted).ToList();
+				break;
+			case FilterType.NotCompleted:
+				filteredTaskItems = filteredTaskItems.OrderByDescending(t => t.IsFavorite).ThenBy(t => t.IsCompleted).Where(t => !t.IsCompleted).ToList();
+				break;
+		}
+
+		return filteredTaskItems.OrderByDescending(t => t.IsFavorite).ThenBy(t => t.IsCompleted);
+	}
+
+	public enum FilterType
+	{
+		All,
+		Favorites,
+		Completed,
+		NotCompleted
+	}
+}
